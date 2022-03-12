@@ -1,0 +1,69 @@
+---
+title: "More data analysis"
+author: "Derek Situ"
+date: '2022-03-11'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+Reading in the data
+```{r data, message=FALSE, warning=FALSE}
+# read in a csv with file path "path", keep only necessary columns and rename
+#   for readability, add column "Subtotal" which is equal to the sum of 
+#   BestSquat, BestBench, and max(0, Deadlift1, Deadlift2)
+read_results <- function(path) {
+  read_csv(path, col_names = TRUE) %>%
+    select(Name, Sex, Division, 
+           WeightClass = "WeightClassKg", Bodyweight = "BodyweightKg", 
+           Squat1 = "Squat1Kg", Squat2 = "Squat2Kg", Squat3 = "Squat3Kg", 
+           BestSquat = "Best3SquatKg", 
+           Bench1 = "Bench1Kg", Bench2 = "Bench2Kg", Bench3 = "Bench3Kg",
+           BestBench = "Best3BenchKg",
+           Deadlift1 = "Deadlift1Kg", Deadlift2 = "Deadlift2Kg", 
+           Deadlift3 = "Deadlift3Kg", BestDeadlift = "Best3DeadliftKg", 
+           Total = "TotalKg", Place) %>%
+    mutate(Subtotal = BestSquat + BestBench + 
+             ifelse(Deadlift1 > 0 | Deadlift2 > 0,
+                    ifelse(Deadlift2 > Deadlift1, Deadlift2, Deadlift1),
+                    0)) %>%
+    relocate(Subtotal, .before = Deadlift3)
+}
+
+# read in data
+data_21 <- read_results("2021.csv")
+data_19 <- read_results("2019.csv")
+data_18 <- read_results("2018.csv")
+data_17 <- read_results("2017.csv")
+data_16 <- read_results("2016.csv")
+data_15 <- read_results("2015.csv")
+data_14 <- read_results("2014.csv")
+data_13 <- read_results("2013.csv")
+data_12 <- read_results("2012.csv")
+
+# merge all datasets so that we can run regressions with all of the data
+  # note that when a weight n is attempted and failed, it is entered as -n. 
+  # that's why we calculate attempted lifts as the absolute value of the entry.
+all_data <- rbind(data_21, data_19, data_18, data_17, data_16, data_15,
+                  data_14, data_13, data_12) %>%
+  select(Name, WeightClass, Bodyweight, Squat3, Deadlift2, Deadlift3) %>%
+  mutate(AttSquat3 = abs(Squat3), # Att is short for attempted.
+         AttDeadlift2 = abs(Deadlift2), 
+         AttDeadlift3 = abs(Deadlift3),
+         Percent_Increase = (AttDeadlift3 - AttDeadlift2) / AttDeadlift2,
+         D3_Success = ifelse(Deadlift3 > 0, 1, 0)) %>% # whether Deadlift3 is a success.
+  filter(!(WeightClass %in% c("84+", "105", "120", "120+"))) # so that we get a linear fit
+```
+
+```{r regression}
+lm_fit <- lm(D3_Success ~ #insert independent variables
+               , data = all_data)
+summary(lm_fit)
+plot(lm_fit)
+
+x = predict(lm_fit)
+plot(x)
+```
