@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(lme4)
 ```
 
 Reading in the data
@@ -53,17 +54,17 @@ all_data <- rbind(data_21, data_19, data_18, data_17, data_16, data_15,
   mutate(AttSquat3 = abs(Squat3), # Att is short for attempted.
          AttDeadlift2 = abs(Deadlift2), 
          AttDeadlift3 = abs(Deadlift3),
-         Percent_Increase = (AttDeadlift3 - AttDeadlift2) / AttDeadlift2,
+         Percent_Increase = ((AttDeadlift3 - AttDeadlift2) / AttDeadlift2) * 100,
          D3_Success = ifelse(Deadlift3 > 0, 1, 0)) %>% # whether Deadlift3 is a success.
   filter(!(WeightClass %in% c("84+", "105", "120", "120+"))) # so that we get a linear fit
 ```
 
 ```{r regression}
-lm_fit <- lm(D3_Success ~ #insert independent variables
-               , data = all_data)
+lm_fit <- glm(D3_Success ~ log(Percent_Increase + 0.0001) + log(AttDeadlift2), 
+              family = binomial(link = "logit"),
+              data = all_data)
 summary(lm_fit)
 plot(lm_fit)
-
-x = predict(lm_fit)
-plot(x)
+plot(lm_fit$fitted.values)
+plot(lm_fit$residuals)
 ```
