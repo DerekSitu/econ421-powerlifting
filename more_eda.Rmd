@@ -2,7 +2,9 @@
 title: "More data analysis"
 author: "Derek Situ"
 date: '2022-03-11'
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -68,3 +70,4 @@ plot(lm_fit)
 plot(lm_fit$fitted.values)
 plot(lm_fit$residuals)
 ```
+pretty terrible fit
